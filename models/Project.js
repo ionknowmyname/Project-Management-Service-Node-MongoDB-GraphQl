@@ -3,6 +3,10 @@ const Schema = mongoose.Schema;
 
 const projectSchema = new Schema(
     {
+        projectOwnerId: { 
+            type: String,
+            required: true,
+        },
         title: { 
             type: String, 
             required: true,
