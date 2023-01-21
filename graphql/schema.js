@@ -2,23 +2,23 @@ const { GraphQLSchema, GraphQLObjectType } = require("graphql")
 
 
 // Import queries
-const { } = require("./queries")
+const { getAllUsers } = require("./queries")
 
 // Import mutations
-const { } = require("./mutations")
+const { registerUser } = require("./mutations")
 
 // Define QueryType
 const QueryType = new GraphQLObjectType({
     name: "QueryType",
     description: "Queries",
-    fields: {},
+    fields: { getAllUsers },
 })
 
 // Define MutationType
 const MutationType = new GraphQLObjectType({
     name: "MutationType",
     description: "Mutations",
-    fields: {},
+    fields: { registerUser },
 })
 
 

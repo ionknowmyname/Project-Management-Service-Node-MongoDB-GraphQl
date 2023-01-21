@@ -1,8 +1,8 @@
 const mongoose = require("mongoose")
 
 const connectDB = async () => {
+    mongoose.set('strictQuery', false)
     const conn = await mongoose.connect(process.env.DATABASE)
-    // mongoose.set('strictQuery', true)
     console.log("MongoDB connection success")
 }
 

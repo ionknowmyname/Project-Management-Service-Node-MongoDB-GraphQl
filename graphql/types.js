@@ -1,4 +1,4 @@
-const { GraphQLObjectType, GraphQLString, GraphQLBoolean, GraphQLList } = require("graphql")
+const { GraphQLObjectType, GraphQLString, GraphQLBoolean, GraphQLList, GraphQLID } = require("graphql")
 const { User, Task, Project } = require("../models")
 
 const UserType = new GraphQLObjectType({
