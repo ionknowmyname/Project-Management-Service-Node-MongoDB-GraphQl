@@ -1,5 +1,5 @@
 const { GraphQLString } = require("graphql")
-const {  } = require("./types")
+const { ProjectType } = require("./types")
 const { User, Task, Project } = require("../models")
 
 const { createJwtToken } = require("../config/generateToken")
@@ -33,7 +33,7 @@ const loginUser = {
     async resolve(parent, args) {
         const user = await User.findOne({ email: args.email }).select("+password")
         // add password back so we can use it to match
-        console.log(user);
+        console.log("User from loginUser --> ", user)
 
         if(!user || args.password !== user.password) {
             throw new Error("Invalid Credentials")
@@ -45,4 +45,27 @@ const loginUser = {
     }
 }
 
-module.exports = { registerUser, loginUser }
+const createProject = {
+    type: ProjectType,  
+    args: {
+        title: { type: GraphQLString },
+        description: { type: GraphQLString },
+    },
+    async resolve(parent, args, { verifiedUser }) {
+        console.log("Verified user --> ", verifiedUser)
+
+       if(!verifiedUser) {
+            throw new Error("Unauthorized")
+       }
+
+       const project = new Project({
+            projectOwnerId: verifiedUser._id,
+            title: args.title,
+            description: args.description
+       })
+
+       return project.save()
+    }
+}
+
+module.exports = { registerUser, loginUser, createProject }
