@@ -20,6 +20,12 @@ const ProjectType = new GraphQLObjectType({
         title: { type: GraphQLString },
         description: { type: GraphQLString },
         isDone: { type: GraphQLBoolean },
+        projectOwner: { 
+            type: UserType,
+            resolve(parent, args) {
+                return User.findById(parent.projectOwnerId)
+            } 
+        },
         tasks: {
             type: GraphQLList(TaskType),
             resolve(parent, args) {
