@@ -1,5 +1,5 @@
 const { GraphQLString } = require("graphql")
-const { ProjectType, UserType } = require("./types")
+const { ProjectType, UserType, TaskType } = require("./types")
 const { User, Task, Project } = require("../models")
 
 const { createJwtToken } = require("../config/generateToken")
@@ -49,7 +49,7 @@ const createProject = {
         title: { type: GraphQLString },
         description: { type: GraphQLString },
     },
-    async resolve(parent, args, { verifiedUser }) {
+    resolve(parent, args, { verifiedUser }) {
         console.log("Verified user from createProject --> ", verifiedUser)
 
        if(!verifiedUser) {
@@ -66,4 +66,29 @@ const createProject = {
     }
 }
 
-module.exports = { registerUser, loginUser, createProject }
+const createTask = {
+    type: TaskType,  
+    args: {
+        title: { type: GraphQLString },
+        description: { type: GraphQLString },
+        projectId: { type: GraphQLString },
+    },
+    resolve(_, args, { verifiedUser }) {
+        console.log("Verified user from createTask --> ", verifiedUser)
+
+       if(!verifiedUser) {
+            throw new Error("Unauthorized")
+       }
+
+       const task = new Task({
+            taskOwnerId: verifiedUser._id,
+            title: args.title,
+            description: args.description,
+            projectId: args.projectId
+       })
+
+       return task.save()
+    }
+}
+
+module.exports = { registerUser, loginUser, createProject, createTask }

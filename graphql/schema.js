@@ -5,7 +5,7 @@ const { GraphQLSchema, GraphQLObjectType } = require("graphql")
 const { getAllUsers, getUserById, getAllProjects, getProjectById, getProjectByTitle } = require("./queries")
 
 // Import mutations
-const { registerUser, loginUser, createProject } = require("./mutations")
+const { registerUser, loginUser, createProject, createTask } = require("./mutations")
 
 // Define QueryType
 const QueryType = new GraphQLObjectType({
@@ -18,7 +18,7 @@ const QueryType = new GraphQLObjectType({
 const MutationType = new GraphQLObjectType({
     name: "MutationType",
     description: "Mutations",
-    fields: { registerUser, loginUser, createProject },
+    fields: { registerUser, loginUser, createProject, createTask },
 })
 
 
