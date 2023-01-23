@@ -80,18 +80,24 @@ const createTask = {
     resolve(_, args, { verifiedUser }) {
         console.log("Verified user from createTask --> ", verifiedUser)
 
-       if(!verifiedUser) {
+        if(!verifiedUser) {
             throw new Error("Unauthorized")
-       }
+        }
 
-       const task = new Task({
+       // verify project exists
+       let foundProject = Project.findOne({ _id: args.projectId})
+       if(!foundProject) {
+            throw new Error("Project with id not found")
+        }
+
+        const task = new Task({
             taskOwnerId: verifiedUser._id,
             title: args.title,
             description: args.description,
             projectId: args.projectId
-       })
+        })
 
-       return task.save()
+        return task.save()
     }
 }
 
@@ -116,7 +122,7 @@ const updateProjectStatusById = {
             throw new Error("Project contains unfinished Tasks, cannot set Project status to Done")
        }
 
-       let updatedProject = await Project.findOneAndUpdate({_id: args.id, projectOwnerId: verifiedUser._id}, 
+       let updatedProject = await Project.findOneAndUpdate({ _id: args.id, projectOwnerId: verifiedUser._id }, 
             { isDone: args.isDone }, { new: true, runValidators: true })  // run validators in project schema
        // this makes sure only owner of project can update project status
 
@@ -148,7 +154,7 @@ const deleteProjectById = {
             throw new Error("Project contains unfinished Tasks, cannot delete Project")
        }
 
-       let deletedProject = await Project.findOneAndDelete({_id: args.id, projectOwnerId: verifiedUser._id}) 
+       let deletedProject = await Project.findOneAndDelete({ _id: args.id, projectOwnerId: verifiedUser._id }) 
        // this makes sure only owner of project can delete project
 
        if(!deletedProject) {
@@ -159,4 +165,45 @@ const deleteProjectById = {
     }
 }
 
-module.exports = { registerUser, loginUser, createProject, createTask, updateProjectStatusById, deleteProjectById }
+const updateTaskStatusById = {
+    type: TaskType,  
+    description: 'Update Status of Project', 
+    args: {
+        taskId: { type: GraphQLString },   // changed from GraphQLID to string so we can use findOneAndUpdate instead of findByIdAndUpdate
+        isDone: { type: GraphQLBoolean },
+    },
+    async resolve(parent, args, { verifiedUser }) {
+        console.log("Verified user from updateProjectStatusById --> ", verifiedUser)
+
+       if(!verifiedUser) {
+            throw new Error("Unauthorized")
+       }
+
+       // both project owner of which the task belongs to, and task owner can update task
+
+       let foundTask = await Task.findOne({ _id: args.taskId })
+       if(!foundTask) {
+            throw new Error("Task with id not found")
+       }
+       let foundProject = await Project.findOne({ _id: foundTask.projectId })  // once task exist, there'd always be a valid project
+       const projectOwnerId = foundProject.projectOwnerId;
+
+       let updatedTask
+       if(projectOwnerId == verifiedUser._id) {  // current user is the project owner
+            updatedTask  = await Task.findOneAndUpdate({ _id: args.taskId }, 
+                { isDone: args.isDone }, { new: true, runValidators: true })
+       }
+
+        updatedTask = await Task.findOneAndUpdate({ _id: args.taskId, taskOwnerId: verifiedUser._id }, 
+            { isDone: args.isDone }, { new: true, runValidators: true })  // run validators in project schema
+       // this makes sure only owner of Task can update task status
+
+       if(!updatedTask) {
+            throw new Error("Error while updating Task status. Current User is not Project/Task Owner")
+        }       
+
+       return updatedTask
+    }
+}
+
+module.exports = { registerUser, loginUser, createProject, createTask, updateProjectStatusById, deleteProjectById, updateTaskStatusById }
