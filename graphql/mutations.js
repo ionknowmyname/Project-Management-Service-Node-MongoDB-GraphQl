@@ -1,4 +1,4 @@
-const { GraphQLString } = require("graphql")
+const { GraphQLString, GraphQLBoolean, GraphQLID } = require("graphql")
 const { ProjectType, UserType, TaskType } = require("./types")
 const { User, Task, Project } = require("../models")
 
@@ -6,6 +6,7 @@ const { createJwtToken } = require("../config/generateToken")
 
 const registerUser = {
     type: UserType,  // returns back a string after creating user
+    description: 'Creates a new User',
     args: {
         username: { type: GraphQLString },
         email: { type: GraphQLString },
@@ -22,7 +23,8 @@ const registerUser = {
 }
 
 const loginUser = {
-    type: GraphQLString,  // returns back a string after creating user
+    type: GraphQLString,  // returns back a string after logging user in
+    description: 'Login an existing User',
     args: {
         email: { type: GraphQLString },
         password: { type: GraphQLString },
@@ -45,6 +47,7 @@ const loginUser = {
 
 const createProject = {
     type: ProjectType,  
+    description: 'Create a new Project',
     args: {
         title: { type: GraphQLString },
         description: { type: GraphQLString },
@@ -67,7 +70,8 @@ const createProject = {
 }
 
 const createTask = {
-    type: TaskType,  
+    type: TaskType,
+    description: 'Create a new Task',  
     args: {
         title: { type: GraphQLString },
         description: { type: GraphQLString },
@@ -91,4 +95,68 @@ const createTask = {
     }
 }
 
-module.exports = { registerUser, loginUser, createProject, createTask }
+const updateProjectStatusById = {
+    type: ProjectType,  
+    description: 'Update Status of Project', 
+    args: {
+        id: { type: GraphQLString },   // changed from GraphQLID to string so we can use findOneAndUpdate instead of findByIdAndUpdate
+        isDone: { type: GraphQLBoolean },
+    },
+    async resolve(parent, args, { verifiedUser }) {
+        console.log("Verified user from updateProjectStatusById --> ", verifiedUser)
+
+       if(!verifiedUser) {
+            throw new Error("Unauthorized")
+       }
+
+       // make sure project has no tasks that are undone before setting project to done
+       let unfinishedTasks = Task.find({ projectId: args.id, isDone: false })
+
+       if(unfinishedTasks && args.isDone == true){
+            throw new Error("Project contains unfinished Tasks, cannot set Project status to Done")
+       }
+
+       let updatedProject = await Project.findOneAndUpdate({_id: args.id, projectOwnerId: verifiedUser._id}, 
+            { isDone: args.isDone }, { new: true, runValidators: true })  // run validators in project schema
+       // this makes sure only owner of project can update project status
+
+       if(!updatedProject) {
+            throw new Error("Error while updating Project status. Current User is not Project Owner")
+        }       
+
+       return updatedProject
+    }
+}
+
+const deleteProjectById = {
+    type: GraphQLString, 
+    description: 'Delete project by projectId',  
+    args: {
+        id: { type: GraphQLString },   
+    },
+    async resolve(parent, args, { verifiedUser }) {
+        console.log("Verified user from deleteProjectById --> ", verifiedUser)
+
+       if(!verifiedUser) {
+            throw new Error("Unauthorized")
+       }
+
+       // make sure project has no tasks that are undone before setting project to done
+       let unfinishedTasks = Task.find({ projectId: args.id, isDone: false })
+
+       if(unfinishedTasks && args.isDone == true){
+            throw new Error("Project contains unfinished Tasks, cannot delete Project")
+       }
+
+       let deletedProject = await Project.findOneAndDelete({_id: args.id, projectOwnerId: verifiedUser._id}) 
+       // this makes sure only owner of project can delete project
+
+       if(!deletedProject) {
+            throw new Error("Error while deleting Project. Current User is not Project Owner")
+        }       
+
+       return "Project Deleted Successfully"
+    }
+}
+
+module.exports = { registerUser, loginUser, createProject, createTask, updateProjectStatusById, deleteProjectById }
