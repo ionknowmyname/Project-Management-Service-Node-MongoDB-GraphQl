@@ -1,11 +1,11 @@
 const { GraphQLString } = require("graphql")
-const { ProjectType } = require("./types")
+const { ProjectType, UserType } = require("./types")
 const { User, Task, Project } = require("../models")
 
 const { createJwtToken } = require("../config/generateToken")
 
 const registerUser = {
-    type: GraphQLString,  // returns back a string after creating user
+    type: UserType,  // returns back a string after creating user
     args: {
         username: { type: GraphQLString },
         email: { type: GraphQLString },
@@ -15,12 +15,9 @@ const registerUser = {
         const { username, email, password } = args
         const user = new User({ username, email, password })
 
-        await user.save()
-        const token = createJwtToken(user)
+        const savedUser = await user.save()
 
-        return token
-        // return JSON.stringify(token)  // no need to json stringify coz createjwtToken is returning string
-        // later this should be for logging in, creating user should return user created
+        return savedUser    
     }
 }
 
@@ -42,6 +39,7 @@ const loginUser = {
         const token = createJwtToken(user)
 
         return token
+        // return JSON.stringify(token)  // no need to json stringify coz createjwtToken is returning string
     }
 }
 
@@ -52,7 +50,7 @@ const createProject = {
         description: { type: GraphQLString },
     },
     async resolve(parent, args, { verifiedUser }) {
-        console.log("Verified user --> ", verifiedUser)
+        console.log("Verified user from createProject --> ", verifiedUser)
 
        if(!verifiedUser) {
             throw new Error("Unauthorized")
